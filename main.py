@@ -8,6 +8,8 @@ parser = argparse.ArgumentParser()
 session = requests.Session()
 
 parser.add_argument("-f", "--file", type=argparse.FileType('r'), required=False, help="File with Username Line 1, and Password Line 2.")
+parser.add_argument("-j", "--json", default=False, action=argparse.BooleanOptionalAction, required=False, help="Output JSON files of data")
+
 args = parser.parse_args()
 
 response = session.get("https://ocjene.skole.hr/login")
@@ -21,7 +23,7 @@ if args.file:
         user = file.readline().strip()
         passw = file.readline().strip()
 
-if not user and not passw:
+if not user or not passw:
     user = input("Enter Username: ")
     passw = input("Enter Password: ")
 
@@ -37,7 +39,7 @@ headers = {
 
 
 def convert():
-    soup = BeautifulSoup(html_content, "lxml")
+    soup = BeautifulSoup(course.text, "lxml")
     classes = []
     for li in soup.select("ul.list > li"):
         course_name = li.select_one(".course-info span:nth-of-type(1)").get_text(strip=True)
@@ -72,14 +74,12 @@ def convert():
 		"classes:": classes_data
 	}
 
-
-
     school_json = json.dumps(school_data, indent=4, ensure_ascii=False)
     classes_json = json.dumps(classes_data, indent=4, ensure_ascii=False)
 
-    pathlib.Path("main.json").write_text(school_json)
-    pathlib.Path("classes.json").write_text(classes_json)
-
+    if args.json == True:
+        pathlib.Path("main.json").write_text(school_json)
+        pathlib.Path("classes.json").write_text(classes_json)
 
     return(school_json)
 
@@ -88,8 +88,5 @@ if login_response.url == "https://ocjene.skole.hr/login":
     raise ValueError("Wrong Username or Passowrd!")
 
 course = session.get("https://ocjene.skole.hr/course")
-html_content = course.text
 
-print(convert())
-#pathlib.Path("main.json").write_text(convert())
-#convert()
+convert()
